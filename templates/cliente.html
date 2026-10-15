@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPD BOX - LISTA DE MUSICA</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-color: #6366f1;
+            --accent-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --input-bg: #0f172a;
+            --online-color: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 20px 16px;
+        }
+
+        /* Container ajustado para suportar o layout de 2 colunas */
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        header {
+            text-align: center;
+            padding-top: 12px;
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-main);
+        }
+
+        header p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* LAYOUT EM 2 COLUNAS */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 280px 1fr; /* Coluna da esquerda fixa em 280px */
+            gap: 20px;
+            align-items: start;
+        }
+
+        /* Responsividade para Celulares (empilha em telas menores que 768px) */
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .coluna-esquerda, .coluna-direita {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-color);
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--text-muted);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 14px;
+            background-color: var(--accent-color);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        button:hover {
+            background-color: var(--accent-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .queue-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+
+        .queue-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .badge {
+            background-color: var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        ul#listaFila {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        #app {
+            display: none;
+        }
+
+        #bloqueio-nome {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .caixa-modal {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 30px;
+            border-radius: 16px;
+            text-align: center;
+            width: 90%;
+            max-width: 360px;
+        }
+
+        .caixa-modal h2 { margin-bottom: 8px; }
+        .caixa-modal p { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px; }
+
+        ul#listaFila li {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            padding: 12px 14px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            color: var(--text-main);
+            word-break: break-word;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        ul#listaFila li:first-child {
+            border-color: var(--accent-color);
+            background-color: rgba(99, 102, 241, 0.08);
+        }
+
+        ul#listaFila li::before {
+            content: "♪";
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        /* ESTILOS DA LISTA DE PESSOAS (ESQUERDA) */
+        ul#listaPessoasConectadas {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .person-card {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: 0.88rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: border-color 0.2s ease;
+        }
+
+        .person-card:hover {
+            border-color: var(--accent-color);
+        }
+
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--online-color);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--online-color);
+            flex-shrink: 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            padding: 12px 0;
+        }
+
+        .queue-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        
+        .queue-controls button {
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+        }
+
+        .queue-controls button:hover {
+            border-color: var(--accent-color);
+            background-color: var(--card-bg);
+        }
+    </style>
+</head>
+<body>
+    <div id="bloqueio-nome">
+        <div class="caixa-modal">
+            <h2>Bem-vindo à CPDbox!</h2>
+            <p>Digite seu nome para continuar:</p>
+            <input type="text" id="nomeInput" placeholder="Seu nome ou apelido..." required>
+            <button onclick="salvarNome()">Conectar</button>
+        </div>
+    </div>
+
+    <div id="app" class="container">
+        <header>
+            <h1>CPDbox</h1>
+            <p>O CPD DO BESSA É FODA</p>
+        </header>
+
+        <main class="main-layout">
+            <!-- COLUNA DA ESQUERDA: PESSOAS CONECTADAS -->
+            <aside class="coluna-esquerda">
+                <section class="card">
+                    <div class="queue-header">
+                        <h2>Conectados</h2>
+                        <span class="badge" id="contadorOnline">0</span>
+                    </div>
+                    <ul id="listaPessoasConectadas">
+                        <div class="empty-state">Ninguém conectado.</div>
+                    </ul>
+                </section>
+            </aside>
+
+            <!-- COLUNA DA DIREITA: ADICIONAR VÍDEO E FILA -->
+            <section class="coluna-direita">
+                <section class="card">
+                    <div class="input-group">
+                        <input type="text" id="urlInput" placeholder="Cole o link ou ID do vídeo do YouTube...">
+                        <button onclick="enviarVideo()">Enviar para a Fila</button>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <div class="queue-header">
+                        <h2>Próximas da Fila</h2>
+                        <span class="badge" id="contadorFila">0</span>
+                    </div>
+                    <div class="queue-controls">
+                        <button onclick="pausa()">Pausar</button> 
+                        <button onclick="play()">Reproduzir</button> 
+                        <button onclick="skip()">Skip</button> 
+                        
+                    </div>
+                    <div class="card" style="margin-top: 15px;">
+                        <label for="volumeInput" style="display: block; margin-bottom: 8px; font-weight: 600;">Volume da TV</label>
+                        <input type="range" id="volumeInput" min="0" max="1" step="0.05" value="1" oninput="ajustarVolume(this.value)" style="width: 100%;">
+                    </div>
+                    <ul id="listaFila">
+                        <div class="empty-state">Nenhum vídeo na fila. Seja o primeiro a pedir!</div>
+                    </ul>
+                </section>
+            </section>
+        </main>
+    </div>
+
+    <!-- Biblioteca Socket.IO via CDN -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <script>
+        const socket = io();
+
+        function enviarVideo() {
+            const input = document.getElementById('urlInput');
+            const url = input.value.trim();
+            
+            if (url) {
+                socket.emit('adicionar_video', { url: url });
+                input.value = '';
+            }
+        }
+        
+        function pausa() {
+            socket.emit('pausar_video');
+            console.log("Emitido para o servidor: pausar_video");
+        }
+        
+        function play() {
+            socket.emit('play_video');
+            console.log("Emitido para o servidor: play_video");
+        }   
+
+        function skip() {
+            socket.emit('skip_video');
+            console.log("Emitido para o servidor: skip_video");
+        }
+
+        function ajustarVolume(valor) {
+            // Envia o novo valor de volume (de 0.0 até 1.0) para o servidor
+            socket.emit('alterar_volume', { volume: parseFloat(valor) });
+        }
+
+
+
+        document.getElementById('urlInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                enviarVideo();
+            }
+        });
+
+        function salvarNome() {
+            const nomeInput = document.getElementById('nomeInput');
+            const nome = nomeInput.value.trim();
+            
+            if (nome) {
+                localStorage.setItem('nomeUsuario', nome);
+                document.getElementById('bloqueio-nome').style.display = 'none';
+                document.getElementById('app').style.display = 'flex';
+                socket.emit('registrar_usuario', { nome: nome });
+            } else {
+                alert('Por favor, digite um nome válido.');
+            }
+        }
+
+        socket.on('atualizar_fila', function(dados) {
+            const lista = document.getElementById('listaFila');
+            const contador = document.getElementById('contadorFila');
+            lista.innerHTML = '';
+            
+            if (dados && dados.fila && dados.fila.length > 0) {
+                contador.innerText = dados.fila.length;
+                
+                dados.fila.forEach(function(item) {
+                    const li = document.createElement('li');
+                    
+                    const textoExibicao = typeof item === 'object' 
+                        ? `${item.titulo || item.id} (Pedida por: ${item.adicionado_por || 'Anônimo'})` 
+                        : item;
+                    li.innerText = textoExibicao;
+                    
+                    lista.appendChild(li);
+                });
+            } else {
+                contador.innerText = '0';
+                lista.innerHTML = '<div class="empty-state">Nenhum vídeo na fila. Seja o primeiro a pedir!</div>';
+            }
+        });
+
+        socket.on('atualizar_online', function(dados) {
+            const contador = document.getElementById('contadorOnline');
+            if (dados && dados.online !== undefined) {
+                contador.innerText = dados.online;
+            }
+        });
+
+        socket.on('atualizar_pessoas_conectadas', function(dados) {
+            const lista = document.getElementById('listaPessoasConectadas');
+            lista.innerHTML = '';
+            
+            if (dados && dados.pessoas && dados.pessoas.length > 0) {
+                dados.pessoas.forEach(function(nome) {
+                    const li = document.createElement('li');
+                    li.className = 'person-card';
+                    
+                    const dot = document.createElement('span');
+                    dot.className = 'online-dot';
+                    
+                    const nomeTexto = document.createElement('span');
+                    nomeTexto.innerText = nome;
+                    
+                    li.appendChild(dot);
+                    li.appendChild(nomeTexto);
+                    lista.appendChild(li);
+                });
+            } else {
+                lista.innerHTML = '<div class="empty-state">Ninguém conectado.</div>';
+            }
+        });
+
+        socket.on('mudar_volume_tv', function(dados) {
+            if (dados && dados.volume !== undefined) {
+                console.log("Volume alterado para:", dados.volume * 100 + "%");
+                const volumeInput = document.getElementById('volumeInput');
+                volumeInput.value = dados.volume;
+            }
+        });
+    </script>
+</body>
+</html>

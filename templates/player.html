@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Player de Vídeos - TV</title>
+    <!-- Estilo mínimo para o vídeo ocupar a tela toda em fundo preto -->
+    <style>
+        body { margin: 0; background-color: black; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: sans-serif; }
+        #player { width: 100%; height: 100vh; }
+    </style>
+</head>
+<body>
+
+    <h2 id="status">Aguardando vídeos na fila...</h2>
+    <video id="player" autoplay controls style="display: none; width: 100%; height: 100vh;"></video>
+
+    <!-- Bibliotecas carregadas via CDN (Sem NPM / Sem Build) -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <script>
+        const socket = io();
+        let player;
+        let videoAtual = null;
+    
+
+        const playerVideo = document.getElementById('player');
+
+        // Evento que detecta sozinho quando o arquivo de vídeo chegou ao fim!
+        playerVideo.onended = function() {
+            console.log("Vídeo terminou! Avisando o servidor...");
+            socket.emit('video_finalizado');
+        };
+
+        socket.on('tocar_video', function(dados) {
+            console.log("Recebido do servidor:", dados);
+            videoAtual = dados;
+            if (dados && dados.url_mp4) {
+                document.getElementById('status').style.display = 'none';
+                
+                // Atribui o link direto do arquivo .mp4 ao player nativo do navegador
+                playerVideo.src = dados.url_mp4;
+                playerVideo.style.display = 'block';
+                
+                // Dá o play no vídeo
+                playerVideo.play().catch(function(erro) {
+                    console.log("Erro de autoplay do navegador:", erro);
+                });
+            } else {
+                playerVideo.pause();
+                playerVideo.src = "";
+                playerVideo.style.display = 'none';
+
+                document.getElementById('status').innerText = 'Fila vazia. Adicione vídeos pelo celular!';
+                document.getElementById('status').style.display = 'block';
+            }
+        });
+
+        socket.on('pausar_video', function() {
+            console.log("Recebido do servidor: pausar_video");
+            playerVideo.pause().catch(function(erro) {
+                console.log("Erro ao pausar o vídeo:", erro);
+            });
+        });
+
+        // Escuta o comando de alteração de volume vindo do celular
+        socket.on('mudar_volume_tv', function(dados) {
+            if (dados && dados.volume !== undefined) {
+                playerVideo.volume = dados.volume;
+                console.log("Volume alterado para:", dados.volume * 100 + "%");
+            }
+        });
+        socket.on('play_video', function() {
+            console.log("Recebido do servidor: play_video");
+            playerVideo.play().catch(function(erro) {
+                console.log("Erro ao reproduzir o vídeo:", erro);
+            });
+        });
+        let tentativasErro = 0;
+
+        playerVideo.onerror = function() {
+            console.log("Erro ao carregar o vídeo:", playerVideo.error);
+            tentativasErro++;
+
+            if (tentativasErro <= 2 && videoAtual && videoAtual.url_mp4) {
+                console.log(`Tentando novamente (${tentativasErro}/2)...`);
+                playerVideo.src = videoAtual.url_mp4;
+                playerVideo.play().catch(function(erro) {
+                    console.log("Erro de autoplay do navegador:", erro);
+                });
+            } else {
+                console.log("Desisti de tentar, pulando para o próximo vídeo...");
+                tentativasErro = 0;
+                socket.emit('video_finalizado'); // ou skip_video, dependendo da semântica que você quer
+            }
+        };
+            
+        socket.on('skip_video', function() {
+            console.log("Recebido do servidor: skip_video");
+            playerVideo.pause();
+            playerVideo.src = "";
+            playerVideo.style.display = 'none';
+            document.getElementById('status').innerText = 'Vídeo pulado. Aguardando próximo vídeo...';
+            document.getElementById('status').style.display = 'block';
+        });
+    </script>
+</body>
+</html>
